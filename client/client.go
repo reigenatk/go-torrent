@@ -156,7 +156,7 @@ func performPeerHandshake(conn net.Conn, peerID [20]byte, infoHash [20]byte) err
 
 	// read in the rest of the peer handshake response
 	restOfResponse := make([]byte, 48+len(pstr))
-	io.ReadFull(conn, restOfResponse)
+	_, err = io.ReadFull(conn, restOfResponse)
 	if err != nil {
 		return err
 	}
@@ -216,9 +216,27 @@ func (client *Client) SendChoke() error {
 	return err
 }
 
-// piece: <len=0009+X><id=7><index><begin><block>
-// The piece message is variable length, where X is the length of the block. The payload contains the following information:
+// request: <len=0013><id=6><index><begin><length>
+// The request message is fixed length, and is used to request a block.
+// The payload contains the following information:
 
 // index: integer specifying the zero-based piece index
 // begin: integer specifying the zero-based byte offset within the piece
-// block: block of data, which is a subset of the piece specified by index.
+// length: integer specifying the requested length.
+func (client *Client) SendRequest(index, begin, length int) error {
+
+	payload := make([]byte, 12)
+	binary.BigEndian.PutUint32(payload[0:4], uint32(index))
+	binary.BigEndian.PutUint32(payload[4:8], uint32(begin))
+	binary.BigEndian.PutUint32(payload[8:12], uint32(length))
+
+	msg := message.Message{
+		ID:      message.Request,
+		Payload: payload,
+	}
+
+	msgInBytes := msg.MessageToByteSlice()
+	_, err := client.Conn.Write(msgInBytes)
+
+	return err
+}

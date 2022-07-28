@@ -2,10 +2,16 @@ package p2p
 
 import (
 	"fmt"
+	"io"
 	"log"
 	"main/client"
+	"main/message"
 	"main/peers"
+	"time"
 )
+
+const NormalBlockSize int = 16384  // 2^14 aka 16KB
+const NormalPieceSize int = 262144 // 2^18 aka 256KB
 
 // this struct is more or less the same as torrentFile
 // but with the additional info of peers and peerID
@@ -19,11 +25,16 @@ type Torrent struct {
 	Length      int
 }
 
-// a struct to represent all the info we need about a piece
+// a struct to represent all the info we need about a piece that is in need of download
 type PieceWork struct {
-	index     int
-	length    int
-	pieceHash [20]byte
+	// the index of the piece in terms of the whole file
+	Index int
+
+	// the length of the piece in bytes
+	Length int
+
+	// the SHA1 hash
+	PieceHash [20]byte
 }
 
 // a struct to represent the result of a piece transfer
@@ -31,6 +42,19 @@ type PieceWork struct {
 type pieceResult struct {
 	index    int
 	contents []byte
+}
+
+// a strict to keep track of the progress for a specific peer connection
+type PieceProgress struct {
+	Index  int
+	Client *client.Client
+	// the actual contents of the piece
+	PieceContents []byte
+	Downloaded    int
+	// how many bytes have been requested. We need this to know which offset into the piece
+	// we need to start our next block request at
+	Requested int
+	Backlog   int
 }
 
 // perform the handshake
@@ -46,9 +70,9 @@ func (t *Torrent) Download() ([]byte, error) {
 	for idx, pieceHash := range t.PieceHash {
 		// make new pieceWork struct and put into the workQueue channel
 		newWork := PieceWork{
-			index:     idx,
-			length:    t.PieceLength,
-			pieceHash: pieceHash,
+			Index:     idx,
+			Length:    t.PieceLength,
+			PieceHash: pieceHash,
 		}
 		workQueue <- &newWork
 	}
@@ -77,8 +101,8 @@ func (t *Torrent) startPeer(p peers.Peer, workqueue chan *PieceWork, results cha
 	// close the connection eventually
 	defer peerClient.Conn.Close()
 	fmt.Println("Handshake and bitfield received for peer %s successfully", p.String())
-
 	// send unchoke and interested message to this peer
+
 	peerClient.UnchokePeer()
 	peerClient.SendInterestedPeer()
 
@@ -94,7 +118,7 @@ func (t *Torrent) startPeer(p peers.Peer, workqueue chan *PieceWork, results cha
 	for pieceToGet := range workqueue {
 
 		// check if our peer has this piece
-		if peerClient.Bitfield.HasPiece(pieceToGet.index) == false {
+		if peerClient.Bitfield.HasPiece(pieceToGet.Index) == false {
 			// if it doesnt have this piece, then put this piece back into the queue
 			// for another peer to get and move on to another one
 			workqueue <- pieceToGet
@@ -103,10 +127,58 @@ func (t *Torrent) startPeer(p peers.Peer, workqueue chan *PieceWork, results cha
 
 		// by this point we know that the peer has this piece
 		// so try to download it
-		tryDownloadPiece(peerClient, pieceToGet)
+		tryDownloadBlock(peerClient, pieceToGet)
 	}
 }
 
-func tryDownloadPiece(client *client.Client, piece *PieceWork) error {
+func tryDownloadBlock(client *client.Client, piece *PieceWork) error {
+	progress := PieceProgress{
+		Index:         piece.Index,
+		Client:        client,
+		PieceContents: make([]byte, piece.Length),
+	}
+
+	// Setting a deadline helps get unresponsive peers unstuck.
+	// 30 seconds is more than enough time to download a 262 KB piece
+	client.Conn.SetDeadline(time.Now().Add(30 * time.Second))
+	defer client.Conn.SetDeadline(time.Time{}) // Disable the deadline
+
+	// first, send the request for the block
+	err := client.SendRequest(piece.Index, progress.Requested, NormalBlockSize)
+	if err != nil {
+		return err
+	}
+
+	// now try to read it
+	err = progress.tryReadBlock()
+	if err != nil {
+		return err
+	}
+}
+
+// we define this on PieceProgress because we wanna directly change both the requested
+// and
+func (p *PieceProgress) tryReadBlock() error {
+	// read the response from peer (should be exact same as the one we sent to peer)
+	// using io.ReadFull, not io.ReadAll since that doesnt give us control over length
+	// also IDK why we cant just read the whole response in at once but OK
+	firstByte := make([]byte, 1)
+	_, err := io.ReadFull(p.Client.Conn, firstByte)
+	if err != nil {
+		return err
+	}
+	responseLen := int(firstByte[0])
+
+	// read in the rest of the peer handshake response
+	restOfResponse := make([]byte, responseLen)
+	_, err = io.ReadFull(p.Client.Conn, restOfResponse)
+	if err != nil {
+		return err
+	}
+	// check that the id = 7 for piece
+	if restOfResponse[0] != message.Piece {
+		err := fmt.Errorf("Expected Piece message, got message with id %d instead", restOfResponse[0])
+		return err
+	}
 
 }

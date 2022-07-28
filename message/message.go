@@ -26,7 +26,7 @@ type Message struct {
 	Payload []byte // the actual contents of the message
 }
 
-// helper function to send a message struct to an []byte thats ready for sending
+// helper function to send a Message struct to an []byte thats ready for sending
 func (m *Message) MessageToByteSlice() []byte {
 	// the total length of the message is what is in
 	// the length field + 4 (for the length field itself)
