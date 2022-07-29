@@ -23,7 +23,7 @@ The philosophy behind torrent is that instead of getting the entire file from on
 
 There are also two key ideas in BitTorrent, **choke** and **interested**. Basically choke means, if you send me a message, will I process it? And interested means, if I unchoke you, will I begin to request blocks from you? So basically:
 
-`A block is downloaded by the client when the client is interested in a peer, and that peer is not choking the client. A block is uploaded by a client when the client is not choking a peer, and that peer is interested in the client.`
+> A block is downloaded by the client when the client is interested in a peer, and that peer is not choking the client. A block is uploaded by a client when the client is not choking a peer, and that peer is interested in the client.
 
 It's a little confusing but if still confused check out the spec. The most important fact is that the client starts out choking and uninterested in the peer, so before we request any blocks from the peer (after the handshake but before the first block request), we need to send an **unchoke** and **interested** message to the peer.
 
