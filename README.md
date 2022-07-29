@@ -44,7 +44,7 @@ The code works as follows:
 11. Wait to receive a piece message (ID 7) back from the peer, which contains the requested block.
 12. Once all blocks of a piece have been received, stitch them back together. Calculate the SHA1 hash and verify it with the value in the .torrent file for this piece
 12. If the hashes match, send a have message (ID 4) to the peer for this specific piece index. This is to let the peer know that we (the client) have successfully downloaded and verified this piece's hash.
-13. Do this for all pieces. Stitch pieces together to get final file. Profit!
+13. Wail until all pieces have finished downloading. Stitch pieces together to get final file. Profit!
 
 ### Useful References
 
