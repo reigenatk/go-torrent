@@ -7,7 +7,7 @@ Of course I didn't make this alone, I'm not that smart. I followed [https://blog
 
 ### Terminology
 
-The **client** is us, the user. The **peer** is who we will be downloading the fragmented file from.
+The **client** is us, the user. The **peer** is who we will be downloading the fragmented file from. A peer is identified by nothing more than an IP and a port address.
 
 The **tracker** is a web service usually ending in the `/announce` endpoint, also in the announce field of the `.torrent` file. You visit it first, and it tells you a list of the **peers**. A **peer** is an IP/port combination that is available over the internet, that talks to the tracker periodically, and is also going to give you certain chunks of the file you desire. 
 
@@ -35,8 +35,12 @@ The code works as follows:
 6. Grab the **bitfield** from the peer's response to the handshake. The bitfield tells us which pieces of the file it owns
 7. Create a []byte representing the handshake format, send it
 8. Peer should send the exact same thing back, if not then sever the connection
-9. Send a unblock and interested message to the peer, because by default we ignore the peer's messages to us
-10. 
+9. Send a unchoke (ID 1) and interested (ID 2) message to the peer, because by default we ignore the peer's messages to us
+10. Send a request message (ID 6) to the peer, asking for a block of this specific piece. We must specify piece index, starting position, and how many bytes we want of this piece (which is the blocksize)
+11. Wait to receive a piece message (ID 7) back from the peer, which contains the requested block.
+12. Once all blocks of a piece have been received, stitch them back together. Calculate the SHA1 hash and verify it with the value in the .torrent file for this piece
+12. If the hashes match, send a have message (ID 4) to the peer for this specific piece index. This is to let the peer know that we (the client) have successfully downloaded and verified this piece's hash.
+13. Do this for all pieces. Stitch pieces together to get final file. Profit!
 
 ### Useful References
 

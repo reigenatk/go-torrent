@@ -192,7 +192,6 @@ func (client *Client) SendInterestedPeer() error {
 		ID: message.Interested,
 	}
 	msgInBytes := msg.MessageToByteSlice()
-	// send the byte slice into the connection...
 	_, err := client.Conn.Write(msgInBytes)
 	return err
 }
@@ -202,7 +201,6 @@ func (client *Client) SendUnInterestedPeer() error {
 		ID: message.Notinterested,
 	}
 	msgInBytes := msg.MessageToByteSlice()
-	// send the byte slice into the connection...
 	_, err := client.Conn.Write(msgInBytes)
 	return err
 }
@@ -211,7 +209,21 @@ func (client *Client) SendChoke() error {
 		ID: message.Choke,
 	}
 	msgInBytes := msg.MessageToByteSlice()
-	// send the byte slice into the connection...
+	_, err := client.Conn.Write(msgInBytes)
+	return err
+}
+
+// tells the peer that we have a piece
+// <len=0005><id=4><piece index>
+func (client *Client) SendHave(index int) error {
+
+	payload := make([]byte, 4)
+	binary.BigEndian.PutUint32(payload[0:], uint32(index))
+	msg := message.Message{
+		ID:      message.Have,
+		Payload: payload,
+	}
+	msgInBytes := msg.MessageToByteSlice()
 	_, err := client.Conn.Write(msgInBytes)
 	return err
 }
@@ -239,4 +251,10 @@ func (client *Client) SendRequest(index, begin, length int) error {
 	_, err := client.Conn.Write(msgInBytes)
 
 	return err
+}
+
+// this just passes along the result of message.Read
+func (client *Client) Read() (*message.Message, error) {
+	msg, err := message.Read(client.Conn)
+	return msg, err
 }
