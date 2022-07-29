@@ -76,3 +76,6 @@ For one, when the client runs you can see the packets using Wireshark, which is 
 ### Todos
 - Look into magnet files
 - Support UDP for announce?
+
+### Sidenote
+This is my first substatial project in Go. I quite like it tbh, it feels like a cross between Python and C++. Has dynamic typing, yet it also has structs. The best of both worlds in my opinion. Also thank god there's no header files. I think I'll be using Go more often :P
