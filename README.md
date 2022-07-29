@@ -28,7 +28,7 @@ It's a little confusing but if still confused check out the spec. The most impor
 ### The Process
 
 The code works as follows:
-<details>
+
 1. Decode the bencoded `.torrent` file to figure out the address of the tracker
 2. Create the right URL which will visit the tracker announce page, making sure to have the right query parameters like peerID or infoHash. We essentially have to ask the tracker, "what peers are available to download this file?"
 3. Make the request to the announce page, get a bencoded response back
@@ -43,7 +43,7 @@ The code works as follows:
 12. Once all blocks of a piece have been received, stitch them back together. Calculate the SHA1 hash and verify it with the value in the .torrent file for this piece
 12. If the hashes match, send a have message (ID 4) to the peer for this specific piece index. This is to let the peer know that we (the client) have successfully downloaded and verified this piece's hash.
 13. Do this for all pieces. Stitch pieces together to get final file. Profit!
-</details>
+
 ### Useful References
 
 - The [bittorrent specification](https://wiki.theory.org/BitTorrentSpecification) is really useful
