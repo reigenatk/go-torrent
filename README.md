@@ -63,6 +63,8 @@ For example you can do `.\gotorrent.exe debian-11.4.0-amd64-netinst.iso.torrent 
 
 If not on windows you can do `go build` in project root and it should output a suitable executable for your OS
 
+https://user-images.githubusercontent.com/69275171/181820674-340528cf-da3d-4c19-a38a-1f0e0d3b7f33.mp4
+
 ### Results
 For one, when the client runs you can see the packets using Wireshark, which is super cool
 ![image](https://user-images.githubusercontent.com/69275171/181816349-f8b59929-4259-497b-bd6a-e28c19c8cd8f.png)
