@@ -3,11 +3,11 @@ package p2p
 import (
 	"bytes"
 	"crypto/sha1"
-	"fmt"
 	"log"
 	"main/client"
 	"main/message"
 	"main/peers"
+	"runtime"
 	"time"
 )
 
@@ -43,9 +43,11 @@ type PieceWork struct {
 
 // a struct to represent the result of a piece transfer
 // the index of the piece and the actual contents of the piece
+// also I added which peer did the work as a field, for fun :P
 type pieceResult struct {
 	index    int
 	contents []byte
+	peer     peers.Peer
 }
 
 // a strict to keep track of the progress for a specific peer connection
@@ -65,9 +67,9 @@ type PieceProgress struct {
 	Backlog int
 }
 
-// perform the handshake
+// this function returns the FILE as a []byte
 func (t *Torrent) Download() ([]byte, error) {
-	log.Println("Starting torrent for %s", t.Name)
+	log.Println("Starting torrent for", t.Name)
 
 	// make a channel with a buffer length of the # of pieces we need to download
 	// and which passes thru the channel, values of type pieceWork and pieceResult respectively
@@ -92,8 +94,34 @@ func (t *Torrent) Download() ([]byte, error) {
 
 	numPieces := len(t.PieceHash)
 	for _, peer := range t.Peers {
+		// log.Printf("Starting goroutine for peer %s", peer.String())
 		go t.startPeer(peer, workQueue, results, numPieces)
 	}
+	numWorkers := runtime.NumGoroutine() - 1 // subtract 1 for main thread
+	log.Printf("Started %d goroutines total", numWorkers)
+	log.Printf("There are %d pieces in total", numPieces)
+	// receive pieces from the results channel and stitch together into one big file
+	theFile := make([]byte, t.Length)
+
+	// keep track of how many pieces have finished
+	donePieces := 0
+
+	// while not all pieces have been received...
+	for donePieces < numPieces {
+		// sends/receives from channel BLOCK AUTOMATICALLY in go...
+		// so this means we can just write this..
+		pieceRes := <-results
+
+		// copy the piece contents into the greater file buffer
+		copy(theFile[(pieceRes.index*t.PieceLength):], pieceRes.contents)
+
+		donePieces++
+
+		// UI stuff
+		percent := (float64(donePieces) / float64(numPieces)) * 100
+		log.Printf("(%0.2f%%) Piece #%d downloaded successfully by peer %s", percent, donePieces, pieceRes.peer.String())
+	}
+	return theFile, nil
 }
 
 // this function operates on ONE peer and will be invoked many times using goroutines
@@ -103,13 +131,13 @@ func (t *Torrent) startPeer(p peers.Peer, workqueue chan *PieceWork, results cha
 	// this actually goes ahead and makes the TCP connection to the peer
 	peerClient, err := client.New(p, t.PeerID, t.InfoHash, numPieces)
 	if err != nil {
-		log.Printf("Could not handshake and/or get bitfield for peer %s", p.String())
+		log.Printf("Could not handshake with peer %s. Disconnecting\n", p.String())
 		return
 	}
 
 	// close the connection eventually
 	defer peerClient.Conn.Close()
-	fmt.Println("Handshake and bitfield received for peer %s successfully", p.String())
+	// log.Printf("Handshake and bitfield received for peer %s successfully", p.String())
 
 	// send unchoke and interested message to this peer
 	peerClient.UnchokePeer()
@@ -131,7 +159,7 @@ func (t *Torrent) startPeer(p peers.Peer, workqueue chan *PieceWork, results cha
 	for pieceToGet := range workqueue {
 
 		// check if our peer has this piece
-		if peerClient.Bitfield.HasPiece(pieceToGet.Index) == false {
+		if !peerClient.Bitfield.HasPiece(pieceToGet.Index) {
 			// if it doesnt have this piece, then put this piece back into the queue
 			// for another peer to get and move on to another one
 			workqueue <- pieceToGet
@@ -147,7 +175,7 @@ func (t *Torrent) startPeer(p peers.Peer, workqueue chan *PieceWork, results cha
 
 		// verify piece hash
 		isHashGood := verifyPieceHash(pieceContents, pieceToGet.PieceHash[:])
-		if isHashGood == false {
+		if !isHashGood {
 			log.Printf("Piece #%d failed integrity check, piece came from peer %s\n", pieceToGet.Index, p.String())
 			workqueue <- pieceToGet
 			continue
@@ -162,6 +190,7 @@ func (t *Torrent) startPeer(p peers.Peer, workqueue chan *PieceWork, results cha
 		result := pieceResult{
 			index:    pieceToGet.Index,
 			contents: pieceContents,
+			peer:     p,
 		}
 		results <- &result
 	}
@@ -264,8 +293,6 @@ func verifyPieceHash(pieceContents []byte, correctHashForThisPiece []byte) bool 
 	hash := sha1.Sum(pieceContents)
 
 	// check if the hashes are equal. Note we can't use != or ==, must use bytes.Equal
-	if bytes.Equal(hash[:], correctHashForThisPiece[:]) {
-		return false
-	}
-	return true
+	return bytes.Equal(hash[:], correctHashForThisPiece[:])
+
 }

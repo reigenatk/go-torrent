@@ -5,6 +5,7 @@ import (
 	"encoding/binary"
 	"fmt"
 	"io"
+	"log"
 	"main/bitfield"
 	"main/message"
 	"main/peers"
@@ -13,13 +14,17 @@ import (
 )
 
 type Client struct {
+	// the TCP connection in Go
 	Conn net.Conn
 	// has the peer choked our client?
 	Choked bool
 	// which pieces does this peer own?
 	Bitfield bitfield.Bitfield
-	peer     peers.Peer
-	peerID   [20]byte
+	// the peer that this client will work with
+	peer peers.Peer
+	// the peerID is a 20byte identifier for OUR client actually, not the peer
+	peerID [20]byte
+	// the SHA1 hash of the info dict in the .torrent file
 	infoHash [20]byte
 }
 
@@ -81,13 +86,16 @@ func New(peer peers.Peer, peerID [20]byte, infoHash [20]byte, numPieces int) (*C
 	err = performPeerHandshake(conn, peerID, infoHash)
 	if err != nil {
 		conn.Close()
+		// log.Println(err.Error())
 		return nil, err
 	}
+	// log.Println("Handshake finished on peer", peer.String())
 
 	// receive the bitfield message that tells us what pieces this particular peer owns
 	piecesOwned, err := receiveBitfieldMessage(conn)
 	if err != nil {
 		conn.Close()
+		log.Println(err.Error())
 		return nil, err
 	}
 
@@ -95,11 +103,15 @@ func New(peer peers.Peer, peerID [20]byte, infoHash [20]byte, numPieces int) (*C
 	// connection if they receive bitfields that are not of the correct size, or
 	// if the bitfield has any of the spare bits set.
 	// aka bitfield length is not equal to number of pieces, then terminate connection
-	if len(piecesOwned.Payload) != numPieces {
-		conn.Close()
-		err = fmt.Errorf("Number of pieces is not equal to len of bitfield from peer return message")
-		return nil, err
-	}
+	// ok update this keep failing here so I'll comment it out. Original code didnt have
+	// this anyways, I just wanted to be fancy.
+
+	// if len(piecesOwned.Payload) != numPieces {
+	// 	conn.Close()
+	// 	err = fmt.Errorf("number of pieces is not equal to len of bitfield from peer return message")
+	// 	log.Println(err.Error())
+	// 	return nil, err
+	// }
 
 	ret := Client{
 		Conn:     conn,
@@ -146,6 +158,7 @@ func performPeerHandshake(conn net.Conn, peerID [20]byte, infoHash [20]byte) err
 	firstByte := make([]byte, 1)
 	_, err = io.ReadFull(conn, firstByte)
 	if err != nil {
+		// log.Println("EOF check")
 		return err
 	}
 	pstrlenResponse := int(firstByte[0])
@@ -155,20 +168,21 @@ func performPeerHandshake(conn net.Conn, peerID [20]byte, infoHash [20]byte) err
 	}
 
 	// read in the rest of the peer handshake response
-	restOfResponse := make([]byte, 48+len(pstr))
+	restOfResponse := make([]byte, 48+pstrlenResponse)
 	_, err = io.ReadFull(conn, restOfResponse)
 	if err != nil {
 		return err
 	}
-	// check that the peerIDs and infoHashes match
+
+	// check that the infoHashes match
 	if bytes.Compare(infoHash[:], restOfResponse[len(pstr)+8:len(pstr)+8+20]) != 0 {
 		err := fmt.Errorf("peer handshake failed, infoHashes don't match")
 		return err
 	}
-	if bytes.Compare(peerID[:], restOfResponse[len(pstr)+28:len(pstr)+28+20]) != 0 {
-		err := fmt.Errorf("peer handshake failed, peerIDs don't match")
-		return err
-	}
+	// if bytes.Compare(peerID[:], restOfResponse[len(pstr)+28:len(pstr)+28+20]) != 0 {
+	// 	err := fmt.Errorf("peer handshake failed, peerIDs don't match")
+	// 	return err
+	// }
 
 	// otherwise we are happy. We've made a handshake, peer response was correct, and
 	// now we can start transferring actual data

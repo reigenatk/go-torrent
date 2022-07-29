@@ -33,13 +33,19 @@ type Message struct {
 
 // helper function to send a Message struct to an []byte thats ready for sending
 func (m *Message) MessageToByteSlice() []byte {
-	// the total length of the message is what is in
-	// the length field + 4 (for the length field itself)
-	ret := make([]byte, 4+m.Length)
+	if m == nil {
+		return make([]byte, 4)
+	}
 
-	binary.BigEndian.PutUint32(ret[0:4], uint32(1+len(m.Payload)))
+	// length = 1 (for id) + len(payload)
+	length := uint32(1 + len(m.Payload))
+	// message is length+4 since length is 4 bytes
+	ret := make([]byte, 4+length)
 
-	ret[5] = byte(m.ID)
+	binary.BigEndian.PutUint32(ret[0:4], length)
+
+	// copy ID in
+	ret[4] = byte(m.ID)
 
 	copy(ret[5:], m.Payload)
 	return ret
@@ -54,6 +60,12 @@ func Read(r io.Reader) (*Message, error) {
 	}
 
 	length := binary.BigEndian.Uint32(pstrlen)
+
+	// keep-alive message. Gotta filter for these else the [1:] slice below will index out of bounds
+	if length == 0 {
+		return nil, nil
+	}
+
 	restOfMessage := make([]byte, length)
 	_, err = io.ReadFull(r, restOfMessage)
 	if err != nil {

@@ -13,7 +13,7 @@ The **tracker** is a web service usually ending in the `/announce` endpoint, als
 
 `.torrent` files are **bencoded**, which is a special kind of encoding. It's not too complex, and there's a nice Go library for this that we use to encode/decode.
 
-A **piece** is simply a fragment of the entire file that we want to torrent. A **block** is even smaller than a piece, put blocks together to form pieces, put pieces together to form the file. Blocks are typically 16KB, and pieces are typically 256KB (so 16 pieces a block). These sizes are changeable but there are limits on how big or small they can be.
+A **piece** is simply a fragment of the entire file that we want to torrent. A **block** is even smaller than a piece, put blocks together to form pieces, put pieces together to form the file. Blocks are typically 16KB, and pieces are typically 256KB (so 16 pieces a block). Actually, the piece length *is* specified in the `.torrent` file. These sizes are changeable but there are limits on how big or small they can be and typically you should stick with the defaults.
 
 The philosophy behind torrent is that instead of getting the entire file from one source, we split the file up into many pieces and then we connect to multiple sources, each of which gives us a piece of the whole file. Then we stitch together the pieces and get the whole file. This is arguably better because it reduces bandwith compared to the first approach, since I don't need to spend minutes, maybe even hours if its a big file, connected to the same server, which may be trying to service many other requests at the same time. Also, torrenting *may* arguably be faster since I can open up many connections at once. Torrenting is kind of like multithreading for downloads, if you think about it.
 
@@ -50,3 +50,5 @@ The code works as follows:
 ### Code Layout
 - `client` creates all the connections and sends all the requests (TCP and HTTP). Uses the "net" and "io" libraries
 - `p2p` and `torrentfile` are the guts of the application that synchronizes all the pieces being downloaded, starts goroutines, etc.
+
+In terms of abstraction- `main` calls `DownloadToFile` (torrentfile.go) which calls `Download` (p2p.go) which starts a bunch of goroutines (one for each peer) of type `startPeer` (p2p.go), which calls `tryDownloadPiece` (p2p.go) which calls `SendRequest` (client.go) repeatedly. That's the method stack trace. Pretty layered but it was relatively important that we kept things well separated so it doesn't get confusing.

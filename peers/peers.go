@@ -33,6 +33,7 @@ func Unmarshal(s string) ([]Peer, error) {
 		offset := i * chunkSize
 		ret[i].IP = net.IP(bytesrep[offset : (offset)+4])
 		ret[i].Port = binary.BigEndian.Uint16(bytesrep[(offset)+4 : (i+1)*chunkSize])
+		// log.Println("Found peer", ret[i].String())
 	}
 	return ret, nil
 }

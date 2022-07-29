@@ -4,12 +4,14 @@ import (
 	"bytes"
 	"crypto/sha1"
 	"fmt"
+	"log"
+	"main/p2p"
 	"main/peers"
 	"math/rand"
 	"net/http"
 	"os"
 	"time"
-	"main/p2p"
+
 	"github.com/jackpal/bencode-go"
 )
 
@@ -76,6 +78,9 @@ func (bto *bencodeTorrent) toTorrentFile() (torrentFile, error) {
 
 	// convert pieces string to [][20]byte
 	pieceSlice, err := bto.Info.makeSlices()
+	if err != nil {
+		return torrentFile{}, err
+	}
 
 	ret := torrentFile{
 		Announce:    bto.Announce,
@@ -97,7 +102,7 @@ func (binfo *bencodeInfo) makeSlices() ([][20]byte, error) {
 
 	// check that it is multiple of 20
 	if len(buf)%20 != 0 {
-		err := fmt.Errorf("The number of bytes in pieces is not divisible by 20, length is %d", len(buf))
+		err := fmt.Errorf("the number of bytes in pieces is not divisible by 20, length is %d", len(buf))
 		return [][20]byte{}, err
 	}
 	// calculate how many hashes we have now that we know it divides 20
@@ -146,6 +151,7 @@ func (tf *torrentFile) requestPeers(peerID [20]byte, Port uint16) ([]peers.Peer,
 
 	// setup HTTP stuff
 	httpClient := &http.Client{Timeout: 15 * time.Second}
+	log.Println("Sending http request to", requestURL)
 	response, err := httpClient.Get(requestURL)
 	if err != nil {
 		return nil, err
@@ -154,7 +160,7 @@ func (tf *torrentFile) requestPeers(peerID [20]byte, Port uint16) ([]peers.Peer,
 
 	// parse http response into struct
 	responseStruct := peers.PeersResponse{}
-	err = bencode.Unmarshal(response.Body, responseStruct)
+	err = bencode.Unmarshal(response.Body, &responseStruct)
 	if err != nil {
 		return nil, err
 	}
@@ -164,7 +170,7 @@ func (tf *torrentFile) requestPeers(peerID [20]byte, Port uint16) ([]peers.Peer,
 }
 
 // this function gets called from main, and calls a bunch of sub functions
-func (tf *torrentFile) DownloadToFile(path string) error {
+func (tf *torrentFile) DownloadToFile(locationToPutFile string) error {
 	// create peer ID
 	var peerID [20]byte
 	_, err := rand.Read(peerID[:])
@@ -175,21 +181,43 @@ func (tf *torrentFile) DownloadToFile(path string) error {
 	// make URL request based on info in the torrent file
 	// peersArray holds the IP/port of all the peers we need to connect to!
 	peersArray, err := tf.requestPeers(peerID, Port)
-
-	// store it in a Torrent struct
-	torrent := p2p.Torrent {
-		Peers: peersArray,
-		PeerID: peerID,
-		InfoHash: tf.InfoHash,
-		PieceHash: tf.PieceHash,
-		PieceLength: tf.PieceLength,
-		Length: tf.Length,
-		Name: tf.Name,
-	}
-
-	buf, err := torrent.Download()
 	if err != nil {
 		return err
 	}
+	if len(peersArray) == 0 {
+		return fmt.Errorf("there are no peers to be found. check your .torrent file")
+	}
+
+	// store it in a Torrent struct
+	torrent := p2p.Torrent{
+		Peers:       peersArray,
+		PeerID:      peerID,
+		InfoHash:    tf.InfoHash,
+		PieceHash:   tf.PieceHash,
+		PieceLength: tf.PieceLength,
+		Length:      tf.Length,
+		Name:        tf.Name,
+	}
+
+	fileContents, err := torrent.Download()
+	if err != nil {
+		return err
+	}
+
+	log.Println("File finished downloading")
+
+	outFile, err := os.Create(locationToPutFile)
+	if err != nil {
+		return err
+	}
+	defer outFile.Close()
+
+	// write the file to the second argument, the path
+	_, err = outFile.Write(fileContents)
+	if err != nil {
+		return err
+	}
+	log.Println("File written to", locationToPutFile)
+	return nil
 
 }
