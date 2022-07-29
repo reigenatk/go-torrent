@@ -15,6 +15,8 @@ The **tracker** is a web service usually ending in the `/announce` endpoint, als
 
 A **piece** is simply a fragment of the entire file that we want to torrent. A **block** is even smaller than a piece, put blocks together to form pieces, put pieces together to form the file. Blocks are typically 16KB, and pieces are typically 256KB (so 16 pieces a block). Actually, the piece length *is* specified in the `.torrent` file. These sizes are changeable but there are limits on how big or small they can be and typically you should stick with the defaults.
 
+![image](https://user-images.githubusercontent.com/69275171/181816646-2864bee0-6910-457c-b223-d83c618ff540.png)
+
 The philosophy behind torrent is that instead of getting the entire file from one source, we split the file up into many pieces and then we connect to multiple sources, each of which gives us a piece of the whole file. Then we stitch together the pieces and get the whole file. This is arguably better because it reduces bandwith compared to the first approach, since I don't need to spend minutes, maybe even hours if its a big file, connected to the same server, which may be trying to service many other requests at the same time. Also, torrenting *may* arguably be faster since I can open up many connections at once. Torrenting is kind of like multithreading for downloads, if you think about it.
 
 There are also two key ideas in BitTorrent, **choke** and **interested**. Basically choke means, if you send me a message, will I process it? And interested means, if I unchoke you, will I begin to request blocks from you? So basically:
@@ -26,8 +28,8 @@ It's a little confusing but if still confused check out the spec. The most impor
 ### The Process
 
 The code works as follows:
-
-1. Decode the bencoded .torrent file to figure out the address of the tracker
+<details>
+1. Decode the bencoded `.torrent` file to figure out the address of the tracker
 2. Create the right URL which will visit the tracker announce page, making sure to have the right query parameters like peerID or infoHash. We essentially have to ask the tracker, "what peers are available to download this file?"
 3. Make the request to the announce page, get a bencoded response back
 4. Decode the response again, and get the list of peers.
@@ -41,7 +43,7 @@ The code works as follows:
 12. Once all blocks of a piece have been received, stitch them back together. Calculate the SHA1 hash and verify it with the value in the .torrent file for this piece
 12. If the hashes match, send a have message (ID 4) to the peer for this specific piece index. This is to let the peer know that we (the client) have successfully downloaded and verified this piece's hash.
 13. Do this for all pieces. Stitch pieces together to get final file. Profit!
-
+</details>
 ### Useful References
 
 - The [bittorrent specification](https://wiki.theory.org/BitTorrentSpecification) is really useful
@@ -52,3 +54,7 @@ The code works as follows:
 - `p2p` and `torrentfile` are the guts of the application that synchronizes all the pieces being downloaded, starts goroutines, etc.
 
 In terms of abstraction- `main` calls `DownloadToFile` (torrentfile.go) which calls `Download` (p2p.go) which starts a bunch of goroutines (one for each peer) of type `startPeer` (p2p.go), which calls `tryDownloadPiece` (p2p.go) which calls `SendRequest` (client.go) repeatedly. That's the method stack trace. Pretty layered but it was relatively important that we kept things well separated so it doesn't get confusing.
+
+### Results
+For one, when the client runs you can see the packets using Wireshark, which is super cool
+![image](https://user-images.githubusercontent.com/69275171/181816349-f8b59929-4259-497b-bd6a-e28c19c8cd8f.png)
