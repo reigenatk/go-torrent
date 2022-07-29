@@ -1,8 +1,7 @@
 # go-torrent
-I decided to learn some Go, seeing as it is one of the most popular languages!
+I decided to learn some Go, seeing as it is quickly becoming one of the most used languages!
 
-![image](https://user-images.githubusercontent.com/69275171/181821508-08cbbc52-dec8-402c-9514-689bf3503b7d.png)
-
+![image](https://user-images.githubusercontent.com/69275171/181839198-ff341870-1538-4bbd-b19c-f30dffc6368f.png)
 
 I've also always been interested in how torrents work, since I've used them before to download completely illegal stuff. So naturally I thought, why not try to write a torrent client in Go? So we will attempt to write something similar to popular torrenting clients, like [qBitTorrent](https://www.qbittorrent.org/) for example. Because underneath all the fancy GUI is just this simple protocol, that all torrent clients must implement.
 
@@ -57,6 +56,8 @@ The code works as follows:
 - `p2p` and `torrentfile` are the guts of the application that synchronizes all the pieces being downloaded, starts goroutines, etc.
 
 In terms of abstraction- `main` calls `DownloadToFile` (torrentfile.go) which calls `Download` (p2p.go) which starts a bunch of goroutines (one for each peer) of type `startPeer` (p2p.go), which calls `tryDownloadPiece` (p2p.go) which calls `SendRequest` (client.go) repeatedly. That's the method stack trace. Pretty layered but it was relatively important that we kept things well separated so it doesn't get confusing.
+
+We also use Go's `channels` feature to easily coordinate running goroutines. The key line of code is probably [here](https://github.com/reigenatk/go-torrent/blob/master/p2p/p2p.go#L128) where we synchronize all the results that are comming in from each goroutine, and put this in a while loop so it goes until all the pieces have finished downloading.
 
 ### Running
 
