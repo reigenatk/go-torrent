@@ -55,6 +55,13 @@ The code works as follows:
 
 In terms of abstraction- `main` calls `DownloadToFile` (torrentfile.go) which calls `Download` (p2p.go) which starts a bunch of goroutines (one for each peer) of type `startPeer` (p2p.go), which calls `tryDownloadPiece` (p2p.go) which calls `SendRequest` (client.go) repeatedly. That's the method stack trace. Pretty layered but it was relatively important that we kept things well separated so it doesn't get confusing.
 
+### Running
+
+Format is `.\gotorrent.exe [.torrent file] [path where you want finished file to be put]`
+For example you can do `.\gotorrent.exe debian-11.4.0-amd64-netinst.iso.torrent debian.iso`
+
+If not on windows you can do `go build` in project root and it should output a suitable executable for your OS
+
 ### Results
 For one, when the client runs you can see the packets using Wireshark, which is super cool
 ![image](https://user-images.githubusercontent.com/69275171/181816349-f8b59929-4259-497b-bd6a-e28c19c8cd8f.png)
