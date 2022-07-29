@@ -58,6 +58,7 @@ In terms of abstraction- `main` calls `DownloadToFile` (torrentfile.go) which ca
 ### Running
 
 Format is `.\gotorrent.exe [.torrent file] [path where you want finished file to be put]`
+
 For example you can do `.\gotorrent.exe debian-11.4.0-amd64-netinst.iso.torrent debian.iso`
 
 If not on windows you can do `go build` in project root and it should output a suitable executable for your OS
