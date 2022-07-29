@@ -66,3 +66,7 @@ If not on windows you can do `go build` in project root and it should output a s
 ### Results
 For one, when the client runs you can see the packets using Wireshark, which is super cool
 ![image](https://user-images.githubusercontent.com/69275171/181816349-f8b59929-4259-497b-bd6a-e28c19c8cd8f.png)
+
+### Todos
+- Look into magnet files
+- Support UDP for announce?
