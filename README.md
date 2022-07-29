@@ -3,7 +3,7 @@ I decided to learn some Go, seeing as it is quickly becoming one of the most use
 
 ![image](https://user-images.githubusercontent.com/69275171/181839198-ff341870-1538-4bbd-b19c-f30dffc6368f.png)
 
-I've also always been interested in how torrents work, since I've used them before to download completely illegal stuff. So naturally I thought, why not try to write a torrent client in Go? So we will attempt to write something similar to popular torrenting clients, like [qBitTorrent](https://www.qbittorrent.org/) for example. Because underneath all the fancy GUI is just this simple protocol, that all torrent clients must implement.
+I've also always been interested in how torrents work, since I've used them before to download completely ~~il~~legal stuff. So naturally I thought, why not try to write a torrent client in Go? So we will attempt to write something similar to popular torrenting clients, like [qBitTorrent](https://www.qbittorrent.org/) for example. Because underneath all the fancy GUI is just this simple protocol, that all torrent clients must implement.
 
 Of course I didn't make this alone, I'm not that smart. I followed <a href="https://blog.jse.li/posts/torrent">this post.</a>
 
