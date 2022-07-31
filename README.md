@@ -59,6 +59,8 @@ In terms of abstraction- `main` calls `DownloadToFile` (torrentfile.go) which ca
 
 We also use Go's `channels` feature to easily coordinate running goroutines. The key line of code is probably [here](https://github.com/reigenatk/go-torrent/blob/master/p2p/p2p.go#L128) where we synchronize all the results that are comming in from each goroutine, and put this in a while loop so it goes until all the pieces have finished downloading.
 
+Also, the only non standard library package we used was [this bencode library](https://github.com/jackpal/bencode-go).
+
 ### Running
 
 Format is `.\gotorrent.exe [.torrent file] [path where you want finished file to be put]`
