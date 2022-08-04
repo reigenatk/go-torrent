@@ -63,11 +63,13 @@ Also, the only non standard library package we used was [this bencode library](h
 
 ### Running
 
-Format is `.\gotorrent.exe [.torrent file] [path where you want finished file to be put]`
+~~Format is `.\gotorrent.exe [path to .torrent file] [path where you want finished file to be put]`~~
 
-For example you can do `.\gotorrent.exe debian-11.4.0-amd64-netinst.iso.torrent debian.iso`
+~~For example you can do `.\gotorrent.exe debian-11.4.0-amd64-netinst.iso.torrent debian.iso`~~
 
-If not on windows you can do `go build` in project root and it should output a suitable executable for your OS
+~~If not on windows you can do `go build` in project root and it should output a suitable executable for your OS~~
+
+OK I learned you can do `go install`, but make sure you have the `$GOROOT/bin` directory in your PATH variable. Then you can directly call the program, so just `gotorrent [path to .torrent file] [path where you want finished file to be put]`
 
 https://user-images.githubusercontent.com/69275171/181820674-340528cf-da3d-4c19-a38a-1f0e0d3b7f33.mp4
 
@@ -80,4 +82,4 @@ For one, when the client runs you can see the packets using Wireshark, which is 
 - Support UDP for announce?
 
 ### Sidenote
-This is my first substatial project in Go. I quite like it tbh, it feels like a cross between Python and C++. Has dynamic typing, yet it also has structs. The best of both worlds in my opinion. Also thank god there's no header files. I think I'll be using Go more often :P
+This is my first substatial project in Go. I quite like it tbh, it feels like a cross between Python and C++. You can declare variables Python style using `:=` and also declare them with types using `var`. It also has structs. Modules are super easy to install, it takes like a day to learn the language thanks to [this site](https://go.dev/tour/welcome/1)... Error messages are really easy to follow. No wonder this language is so popular. Also thank god there's no header files and makefiles. Is this heaven? I think I'll be using Go more often :P
