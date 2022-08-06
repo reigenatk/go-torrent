@@ -90,6 +90,7 @@ This is my first substatial project in Go. I quite like it tbh, it feels like a 
 - Modules are super easy to install, just do `go get` in command line. Even easier to use than `pip`!
 - No semicolons, no `while` keyword, but also no indentation crap like Python (except with `else` statement)
 - Error messages are really easy to follow. 
+- Still has pointers and addresses, but not nearly as much control as in C, seems memory safe enough so far
 - Also thank god there's no header files and makefiles. Just use `package` statement like in Java
 
 No wonder this language is so popular. It also takes like a day to learn the language thanks to [this site](https://go.dev/tour/welcome/1)... Is this heaven? I think I'll be using Go more often :P
