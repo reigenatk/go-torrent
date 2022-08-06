@@ -82,4 +82,14 @@ For one, when the client runs you can see the packets using Wireshark, which is 
 - Support UDP for announce?
 
 ### Sidenote
-This is my first substatial project in Go. I quite like it tbh, it feels like a cross between Python and C++. You can declare variables Python style using `:=` and also declare them with types using `var`. It also has structs. Modules are super easy to install, it takes like a day to learn the language thanks to [this site](https://go.dev/tour/welcome/1)... Error messages are really easy to follow. No wonder this language is so popular. Also thank god there's no header files and makefiles. Is this heaven? I think I'll be using Go more often :P
+This is my first substatial project in Go. I quite like it tbh, it feels like a cross between Python and C++. Here are the main differences:
+
+- You can declare variables Python style using `:=` and also declare them with types using `var`. 
+- structs still exist!
+- The most useful feature imo- the ability to declare functions that exist **on structs of a certain type**. I think the formal name is **methods**?
+- Modules are super easy to install, just do `go get` in command line. Even easier to use than `pip`!
+- No semicolons, no `while` keyword, but also no indentation crap like Python (except with `else` statement)
+- Error messages are really easy to follow. 
+- Also thank god there's no header files and makefiles. Just use `package` statement like in Java
+
+No wonder this language is so popular. It also takes like a day to learn the language thanks to [this site](https://go.dev/tour/welcome/1)... Is this heaven? I think I'll be using Go more often :P
